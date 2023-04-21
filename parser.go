@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/KyleBanks/depth"
+	"github.com/go-openapi/spec"
+	orderJson "github.com/virtuald/go-ordered-json"
 	"go/ast"
 	"go/build"
 	goparser "go/parser"
@@ -18,9 +21,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/KyleBanks/depth"
-	"github.com/go-openapi/spec"
 )
 
 const (
@@ -206,6 +206,7 @@ func New(options ...func(*Parser)) *Parser {
 					VendorExtensible: spec.VendorExtensible{
 						Extensions: nil,
 					},
+					OrderTagPaths: make(orderJson.OrderedObject, 0),
 				},
 				Definitions:         make(map[string]spec.Schema),
 				SecurityDefinitions: make(map[string]*spec.SecurityScheme),
@@ -930,6 +931,10 @@ func refRouteMethodOp(item *spec.PathItem, method string) (op **spec.Operation) 
 }
 
 func processRouterOperation(parser *Parser, operation *Operation) error {
+	type TagPath struct {
+		Tag  string `json:"tag"`
+		Path string `json:"path"`
+	}
 	for _, routeProperties := range operation.RouterProperties {
 		var (
 			pathItem spec.PathItem
@@ -956,6 +961,16 @@ func processRouterOperation(parser *Parser, operation *Operation) error {
 		*op = &operation.Operation
 
 		parser.swagger.Paths.Paths[routeProperties.Path] = pathItem
+		tagPath := TagPath{Path: routeProperties.Path}
+		if len(operation.Tags) > 0 {
+			tagPath.Tag = operation.Tags[0]
+		}
+		tagPathData, err := json.Marshal(&tagPath)
+		if err != nil {
+			log.Printf("tagPath Marshal error: %s", err.Error())
+			return err
+		}
+		parser.swagger.Paths.OrderTagPaths = append(parser.swagger.Paths.OrderTagPaths, orderJson.Member{Key: string(tagPathData), Value: pathItem})
 	}
 
 	return nil

@@ -9,9 +9,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/swaggo/swag"
-	"github.com/swaggo/swag/format"
-	"github.com/swaggo/swag/gen"
+	"github.com/itic-sci/swag"
+	"github.com/itic-sci/swag/format"
+	"github.com/itic-sci/swag/gen"
 )
 
 const (
